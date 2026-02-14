@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SmartTaskManager.API.Models;
 
 namespace SmartTaskManager.API.Data
 {
@@ -8,5 +9,8 @@ namespace SmartTaskManager.API.Data
             : base(options)
         {
         }
+
+        public DbSet<User> Users { get; set; }
+
     }
 }
