@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using SmartTaskManager.API.Data;
 using SmartTaskManager.API.DTOs;
 using SmartTaskManager.API.Models;
+using System.Text;
 
 namespace SmartTaskManager.API.Controllers
 {
@@ -11,10 +14,12 @@ namespace SmartTaskManager.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthController(ApplicationDbContext context)
+        public AuthController(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         [HttpPost("register")]
@@ -50,7 +55,36 @@ namespace SmartTaskManager.API.Controllers
             if (!isPasswordValid)
                 return Unauthorized("Invalid username or password");
 
-            return Ok("Login successful");
+            //return Ok("Login successful");
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+
+            var claims = new[]
+            {
+    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
+    new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString())
+};
+
+            var credentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha256
+            );
+
+            var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(
+                    double.Parse(jwtSettings["DurationInMinutes"]!)
+                ),
+                signingCredentials: credentials
+            );
+
+            var tokenString = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler()
+                .WriteToken(token);
+
+            return Ok(new { token = tokenString });
+
         }
 
     }
