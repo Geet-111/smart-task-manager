@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SmartTaskManager.API.Data;
 using SmartTaskManager.API.DTOs;
 using SmartTaskManager.API.Models;
@@ -25,7 +26,7 @@ namespace SmartTaskManager.API.Controllers
             var user = new User
             {
                 Username = dto.Username,
-                PasswordHash = dto.Password, // temporarily plain text (we will hash later)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), // temporarily plain text (we will hash later)
             };
 
             _context.Users.Add(user);
@@ -33,5 +34,24 @@ namespace SmartTaskManager.API.Controllers
 
             return Ok(new { message = "User registered successfully" });
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginDto dto)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == dto.Username);
+
+            if (user == null)
+                return Unauthorized("Invalid username or password");
+
+            bool isPasswordValid = BCrypt.Net.BCrypt
+                .Verify(dto.Password, user.PasswordHash);
+
+            if (!isPasswordValid)
+                return Unauthorized("Invalid username or password");
+
+            return Ok("Login successful");
+        }
+
     }
 }
