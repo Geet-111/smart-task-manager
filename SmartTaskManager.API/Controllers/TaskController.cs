@@ -1,0 +1,42 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using SmartTaskManager.API.Data;
+using SmartTaskManager.API.DTOs;
+using SmartTaskManager.API.Models;
+using System.Security.Claims;
+
+namespace SmartTaskManager.API.Controllers
+{
+    [Route("api/[controller]")]
+    [ApiController]
+    [Authorize]
+    public class TaskController : ControllerBase
+    {
+        private readonly ApplicationDbContext _context;
+
+        public TaskController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateTask(CreateTaskDto dto)
+        {
+            var userId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+
+            var task = new TaskItem
+            {
+                Title = dto.Title,
+                Description = dto.Description,
+                UserId = userId
+            };
+
+            _context.Tasks.Add(task);
+            await _context.SaveChangesAsync();
+
+            return Ok(task);
+        }
+    }
+}
