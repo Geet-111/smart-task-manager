@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SmartTaskManager.API.Data;
 using SmartTaskManager.API.DTOs;
 using SmartTaskManager.API.Models;
@@ -37,6 +38,20 @@ namespace SmartTaskManager.API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(task);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMyTasks()
+        {
+            var userId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+
+            var tasks = await _context.Tasks
+                .Where(t => t.UserId == userId)
+                .ToListAsync();
+
+            return Ok(tasks);
         }
     }
 }
