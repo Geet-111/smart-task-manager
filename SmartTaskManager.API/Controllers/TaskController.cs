@@ -15,6 +15,9 @@ namespace SmartTaskManager.API.Controllers
     {
         private readonly ApplicationDbContext _context;
 
+        private int CurrentUserId => int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
         public TaskController(ApplicationDbContext context)
         {
             _context = context;
@@ -23,9 +26,7 @@ namespace SmartTaskManager.API.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateTask(CreateTaskDto dto)
         {
-            var userId = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
-            );
+            var userId = CurrentUserId;
 
             var task = new TaskItem
             {
@@ -43,9 +44,7 @@ namespace SmartTaskManager.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMyTasks()
         {
-            var userId = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
-            );
+            var userId = CurrentUserId;
 
             var tasks = await _context.Tasks
                 .Where(t => t.UserId == userId)
@@ -57,9 +56,7 @@ namespace SmartTaskManager.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateTask(int id, UpdateTaskDto dto)
         {
-            var userId = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
-            );
+            var userId = CurrentUserId;
 
             var task = await _context.Tasks
                 .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
@@ -79,9 +76,7 @@ namespace SmartTaskManager.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
-            var userId = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
-            );
+            var userId = CurrentUserId;
 
             var task = await _context.Tasks
                 .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
@@ -92,7 +87,7 @@ namespace SmartTaskManager.API.Controllers
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
 
-            return Ok("Task deleted successfully");
+            return Ok( new { message = "Task deleted successfully" });
         }
     }
 }

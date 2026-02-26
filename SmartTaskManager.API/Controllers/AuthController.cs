@@ -21,23 +21,54 @@ namespace SmartTaskManager.API.Controllers
             _configuration = configuration;
         }
 
+
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // 🔴 CHECK IF USERNAME EXISTS
+            var existingUser = await _context.Users
+                .AnyAsync(u => u.Username == dto.Username);
+
+            if (existingUser)
+                return BadRequest ( new { message = "Username already exists" });
+
             var user = new User
             {
                 Username = dto.Username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), // temporarily plain text (we will hash later)
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                CreatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "User registered successfully" });
+            try
+            {
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "User registered successfully" });
+            }
+            catch (DbUpdateException)
+            {
+                return BadRequest(new {message = "Username already exists" });
+            }
         }
+        //public async Task<IActionResult> Register(RegisterDto dto)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
+
+        //    var user = new User
+        //    {
+        //        Username = dto.Username,
+        //        PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password), // temporarily plain text (we will hash later)
+        //    };
+
+        //    _context.Users.Add(user);
+        //    await _context.SaveChangesAsync();
+
+        //    return Ok(new { message = "User registered successfully" });
+        //}
 
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
