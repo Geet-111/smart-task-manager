@@ -38,7 +38,14 @@ namespace SmartTaskManager.API.Controllers
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
-            return Ok(task);
+            return Ok(new TaskResponseDto
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                IsCompleted = task.IsCompleted,
+                CreatedAt = task.CreatedAt
+            });
         }
 
         [HttpGet]
@@ -50,7 +57,14 @@ namespace SmartTaskManager.API.Controllers
                 .Where(t => t.UserId == userId)
                 .ToListAsync();
 
-            return Ok(tasks);
+            return Ok(tasks.Select(t => new TaskResponseDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                IsCompleted = t.IsCompleted,
+                CreatedAt = t.CreatedAt
+            }));
         }
 
         [HttpPut("{id}")]
@@ -63,21 +77,30 @@ namespace SmartTaskManager.API.Controllers
 
             if (task == null)
                 return NotFound("Task not found");
-
-            task.Title = dto.Title;
-            task.Description = dto.Description;
-            task.IsCompleted = dto.IsCompleted;
+            if(dto.Title != null)
+                 task.Title = dto.Title;
+            if(dto.Description != null)
+                 task.Description = dto.Description;
+            if(dto.IsCompleted.HasValue)
+                 task.IsCompleted = dto.IsCompleted.Value;
 
             await _context.SaveChangesAsync();
 
-            return Ok(task);
+            return Ok(new TaskResponseDto
+            {
+                Id = task.Id,
+                Title = task.Title,
+                Description = task.Description,
+                IsCompleted = task.IsCompleted,
+                CreatedAt = task.CreatedAt
+            });
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTask(int id)
         {
             var userId = CurrentUserId;
-
+               
             var task = await _context.Tasks
                 .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
 
